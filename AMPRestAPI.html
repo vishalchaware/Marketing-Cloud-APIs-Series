@@ -1,0 +1,59 @@
+%%[
+
+    var @clientid, @clientsecret, @accountid, @tenantid
+    var @rows, @rows
+
+     /* Get Credentails for API Integration */
+    set @rows LookupRows("APIIntegrationDE", "CredName", "APISeries");
+
+    if RowsCount(@rows) > 0 then
+        Output(Concat('Integration credentials found', '<br>'))
+        set @row = Row(@rows, 1)
+        set @clientid = Field(@row, "clientid")
+        set @clientsecret = Field(@row, "clientsecret")
+        set @accountid = Field(@row, "accountid")
+        set @tenantid = Field(@row, "TenantID")
+        /* Prepare Payload and Authurl */
+        var @payload, @request, @response, @authurl 
+        set @payload = Concat(
+            '{"grant_type": "client_credentials","client_id": "', 
+            @clientid,
+            '","client_secret":"',
+            @clientsecret,
+            '","accountid":"',
+            @accountid,
+            '"}'       
+        )
+        set @authurl Concat("https://", @tenantid, ".auth.marketingcloudapis.com/v2/token")
+        /* Get AccessToken using REST API POST request */
+        set @request = HTTPPost(@authurl, "application/json", @payload, @response)
+        Output(Concat('Returned Status Code - ', '<br>'))
+        Output(Concat('Response - ', @response, '<br><br>'))
+        /* If successful response, then parse JSON response using SSJS and set AMPScript variable */
+        if @request == "200" then
+        ]%% 
+            <script runat="server" language="javascript">
+                Platform.Load("Core","1");
+                var resp = variable.GetValue("@response");
+                var jsonresp = Platform.Function.ParseJSON(resp);
+                Varaible.SetValue()
+            </script>
+        %%[
+
+    Else 
+        Output(Concat('Integration credentials not found - please contact your administrator', '<br>'))
+    EndIf
+]%%
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>
