@@ -1,11 +1,8 @@
 %%[
-
     var @clientid, @clientsecret, @accountid, @tenantid
     var @rows, @rows
-
      /* Get Credentails for API Integration */
     set @rows LookupRows("APIIntegrationDE", "CredName", "APISeries");
-
     if RowsCount(@rows) > 0 then
         Output(Concat('Integration credentials found', '<br>'))
         set @row = Row(@rows, 1)
@@ -31,14 +28,67 @@
         Output(Concat('Response - ', @response, '<br><br>'))
         /* If successful response, then parse JSON response using SSJS and set AMPScript variable */
         if @request == "200" then
-        ]%% 
-            <script runat="server" language="javascript">
-                Platform.Load("Core","1");
-                var resp = variable.GetValue("@response");
-                var jsonresp = Platform.Function.ParseJSON(resp);
-                Varaible.SetValue()
-            </script>
-        %%[
+            ]%% 
+                <script runat="server" language="javascript">
+                    Platform.Load("Core","1");
+                    var resp = Variable.GetValue("@response");
+                    var jsonresp = Platform.Function.ParseJSON(resp);
+                    Varaible.SetValue("@authtoken", jsonresp.access_token);
+                    Varaible.SetValue("@resturl", jsonresp.rest_instance_url);
+                </script>
+            %%[
+                /* Set Payload and API Route url for next Triggered Send REST API POST request */
+                /* Send Email - Triggered Send Definition */
+                set @payload = '{
+                    "To": {
+                        "Address": "help@example.com",
+                        "SubscriberKey": "12356",
+                        "ContactAttributes": {
+                            "SubscriberAttributes": {
+                                "First_Name": "Aaron",
+                                "Cart_Total": "27.84",
+                                "Order_Number": 123456,
+                                "Purchase_Date": "2019-07-11T18:32:15Z",
+                                "Sub_Total": "30.01",
+                                "Tax": "2.17"
+                            }
+                        }
+                    }
+                }'
+                var @apiroute, @bearertoken
+                set @apiroute = Concat(@resturl, 'messaging/v1/messageDefinationSends/key:62883/send')
+                set @bearertoken = Concat('Bearer ', @authtoken)
+                /* Invoke Triggered Send using REST API POST request */
+                set @request = HTTPPost(@apiroute, "application/json", @payload, @response, "Authorization", @bearertoken)
+                Output(Concat('Triggered Send Response - ', '<br>'))
+                Output(Concat('Returned Status Code - ', @request, '<br>'))
+                Output(Concat('Response - ', @response, '<br><br>'))
+                /* If accepted response, then parse JSON response using SSJS and set AMPScript variable */
+                if @request == "202" then
+                    ]%%
+                        <script runat="server" language="javascript">
+                            Platform.Load("Core","1");
+                            var resp = Variable.GetValue("@response");
+                            var jsonresp = Platform.Function.ParseJSON(resp);
+                            Varaible.SetValue("@recipSendId", jsonresp.responses.recipSendId);
+                        </script>
+                    %%[
+                EndIf
+                /* Set API Route url for MessageSend Status REST API GET request */
+                set @apiroute = Concat(@resturl, 'messaging/v1/messageDefinationSends/key:62883/deliveryrecords/', @recipSendId)
+                /* Invoke MessageSend status using REST API GET request */
+                set @response = HTTPGet(@apiroute, true, 0, @request, "Authorization")
+                Output(Concat('Get Message Send Response - ', '<br>'))
+                Output(Concat('returned Status - ', @request, '<br>'))
+                Output(Concat('Response - ', @response, '<br><br>'))
+                /* Interaction */
+                /* var @apiroute, @bearertoken
+                set @apiroute = concat(@resturl,'interaction/v1/interaction')
+                set @bearertoken = concat('Bearer ', @authtoken)
+                set @response = HTTPGet(@apiroute, true, 0, @request, "Authorization", @bearertoken) */
+        Else 
+            Output(Concat('Error retriving auth token from MC Auth API', '<br><br>'))
+        EndIf
 
     Else 
         Output(Concat('Integration credentials not found - please contact your administrator', '<br>'))
@@ -51,7 +101,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Marketing Cloud APIs Series</title>
 </head>
 <body>
     

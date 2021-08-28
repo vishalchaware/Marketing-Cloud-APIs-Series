@@ -1,0 +1,57 @@
+%%[
+
+    set @de = CreateObject("DataExtension")
+    setObjectProperty(@de, "CustomerKey", "CustomerKey")
+    setObjectProperty(@de, "Name", "Name")
+    setObjectProperty(@de, "Description", "Description")
+    setObjectProperty(@de, "CategoryID", "CategoryID")
+    SetObjectProperty(@de, "DeleteAtEndOfretentionPeriod", "True")
+    SetObjectProperty(@de, "DataretentionPeriod", "Months")
+    SetObjectProperty(@de, "DataRetentionPeriodLength", 1)
+    SetObjectProperty(@de, "IsSendable", "True")
+
+    set @deFields = CreateObject("ClientID");
+    SetObjectProperty(@deFields, "ID", "10000000")
+    SetObjectProperty(@de, "Client", @deFields)
+
+    Set @deFields = CreateObject("DataExtensionField")
+    SetObjectProperty(@deFields, "CustomerKey", "CustomerId")
+    SetObjectProperty(@deFields, "Name", "CustomerID")
+    SetObjectProperty(@deFields, "FieldType", "Text")
+    SetObjectProperty(@de,"SendableDataExtensionField", @deFields)
+
+    set @deFields = CreateObject("Attribute")
+    SetObjectProperty(@deFields, "Name", "Subscriber Key")
+    SetObjectProperty(@deFields, "Value", "")
+    SetObjectProperty(@de, "SendableSubscriberField", @deFields)
+
+     /* Start: Repeat with Other field Name */
+    Set @deFields = CreateObject("DataExtensionField")
+    SetObjectProperty(@deFields,"CustomerKey","First_Name")
+    SetObjectProperty(@deFields,"Name","First_Name")
+    SetObjectProperty(@deFields,"FieldType","Text")
+    SetObjectProperty(@deFields,"MaxLength","50")
+    SetObjectProperty(@deFields,"IsRequired","False")
+    SetObjectProperty(@deFields,"IsPrimaryKey","False")
+    /* End: Repeat with Other field Name */
+
+    AddObjectArrayItem(@de, "Field", @deFields)
+
+    set @CreateOrdDE = InvokeCreate(@de, @Status, @Error);
+]%%
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Cloud API sereis</title>
+</head>
+<body>
+    <h1>Markering Cloud APIs Series</h1>
+    %%= v(@CreateOrdDE) =%%
+    %%= v(@Status) =%%
+    %%= v(@Error) =%%
+</body>
+</html>
