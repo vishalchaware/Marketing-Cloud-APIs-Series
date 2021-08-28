@@ -1,0 +1,113 @@
+<script runat=server>
+    Platform.Load('Core', '1');
+    function getAccessToken() {
+        var clientId, clientSecret, accountId, tenantId;
+        var dataRows = Platform.LookupRows('APIIntegrationDE', 'CredName', 'APISeries');
+        if(dataRows && dataRows.length > 0) {
+            Write("Integration credential found. Retrieving Access Token ..." + "<br><br>");
+            clientId = dataRows[0]["ClientID"];
+            clientSecret = dataRows[0]["ClientSecret"];
+            accountId = dataRows[0]["AccountID"].replace(/ /g,'');
+            tenantId = dataRows[0]["TenantID"];
+
+            var payload = '{"grant_type": "client_credentails","client_id":"' +
+                cleintId + 
+                '","client_secret": "' + 
+                clientSecret + 
+                '","account_id":"' +
+                accountId + 
+                '"}';
+            var authurl = 'https://' + tenantId + 'auth.marketingcloudapis.com/v2/token';
+            var contentType = 'application/json';
+            
+            //var response = HTTP.Post(authurl, contentType, payload);
+            var Content = [0];
+            var statusCode = Platform.Function.HTTPPost(authurl, contentType, payload, [], [], content);
+
+            Write("REST API Access Token Request:" + "<br>");
+            //Write("Status Code: " + response.StatusCode + "<br>");
+            //Write("response: " + response.Response + "<br><br>");
+
+            // return Platform.Function.ParseJSON(response.Response[0])
+            return Platform.Function.ParseJSON(content[0]);
+
+        } else {
+            Write("No valid integration credential found. Please contact your adminstator" + "<br><br>");
+        } 
+
+        try {
+            var jsonresp = getAccessToken();
+            var authToken = jsonresp.access_token;
+            var restURL = jsonresp.rest_instance_url;
+            Write("Access Token: " + authToken + "</br>");
+            Write("RestUrl = " + restURL + "<br><br>");
+
+            var payloadObject = {
+                "To": {
+                    "Address": "help@example.com",
+                    "SubscriberKey": "12356",
+                    "ContactAttributes": {
+                        "SubscriberAttributes": {
+                            "First_Name": "Aaron",
+                            "Cart_Total": "27.84",
+                            "Order_Number": 123456,
+                            "Purchase_Date": "2019-07-11T18:32:15Z",
+                            "Sub_Total": "30.01",
+                            "Tax": "2.17"
+                        }
+                    }
+                }
+            };
+            var payload = Platform.Function.Stringify(payloadObject);
+
+            var apiroute, bearertoken;
+
+            apiroute = restURL + 'messaging/v1/messageDefinationSends/key:62883/send';
+            bearertoken = 'Bearer ' + authToken;
+
+            var headerNames = ["Authorization"];
+            var headerValues = [bearertoken];
+
+            //var restResponse = HTTP.Post(apiroute, "application/json", payload, headerNames, headerValues);
+            var restContent = [0];
+            var restStatusCode = Platform.Function.HTTPPost(apiroute, "application/json", payload, headerNames, headerValues, restContent);
+            
+
+            Write("Triggered Send POST Request: ", "<br>");
+            //Write("Status Code: " + restResponse.StatusCode + "<br>");
+            //Write("Response: " + restResponse.Response + "<br><br>");
+            Write("Status Code: " + restStatusCode + "<br>");
+            Write("Response: " + restContent[0] + "<br><br>");
+
+            // Get details for Welcome Journey by Id Get Request
+            var journeyId = '';
+            apiroute = restURL + 'interaction/v1/interaction' + journeyId;
+            //restResponse = HTTP.Get(apiroute, headerNames, headerValues);
+            var getStatusCode = [0];
+            var getContent = Platform.Function.HTTPGet(apiroute, false, 0, headerNames, headerValues, getStatusCode);
+
+            Write("Welcome Journey by Id Get Request: " + "<br><br>");
+            //Write("Status Code: " + restResponse.Status + "<br>");
+            //Write("Response: " + restResponse.Content + "<br><br>");
+            Write("Status Code: " + getStatusCode + "<br>");
+            Write("Response: " + getContent + "<br><br>");
+
+        } catch(e) {
+            Write("Exception occured: " + e + "<br>");
+        }
+    }
+
+</script>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    Dropbox file new - API test rendering in Landing page
+</body>
+</html>

@@ -1,0 +1,108 @@
+<script runat=server>
+    Platform.Load('Core', '1');
+    function getAccessToken() {
+        var clientId, clientSecret, accountId, tenantId;
+        var dataRows = Platform.LookupRows('APIIntegrationDE', 'CredName', 'APISeries');
+        if(dataRows && dataRows.length > 0) {
+            Write("Integration credential found. Retrieving Access Token ..." + "<br><br>");
+            clientId = dataRows[0]["ClientID"];
+            clientSecret = dataRows[0]["ClientSecret"];
+            accountId = dataRows[0]["AccountID"].replace(/ /g,'');
+            tenantId = dataRows[0]["TenantID"];
+
+            var payload = '{"grant_type": "client_credentails","client_id":"' +
+                cleintId + 
+                '","client_secret": "' + 
+                clientSecret + 
+                '","account_id":"' +
+                accountId + 
+                '"}';
+            var authurl = 'https://' + tenantId + 'auth.marketingcloudapis.com/v2/token';
+            var contentType = 'application/json';
+
+            var req = new Script.Util.HttpRequest(authurl);
+            req.emptyContentHandling = 0;
+            req.retries = 2;
+            req.continueOnError = true;
+            req.contentType = contentType;
+            req.method = "POST";
+            req.postData = payload;
+
+            var resp = req.send();
+
+            //Write("REST API Access Token Request: " + "<br>");
+            //Write("Response: " + String(resp.content) + "<br><br>");
+
+            return Platform.Function.ParseJSON(String(resp.content));
+            
+
+
+        } else {
+            Write("No valid integration credential found. Please contact your adminstator" + "<br><br>");
+        } 
+
+        try {
+            var jsonresp = getAccessToken();
+            var authToken = jsonresp.access_token;
+            var restURL = jsonresp.rest_instance_url;
+            Write("Access Token: " + authToken + "</br>");
+            Write("RestUrl = " + restURL + "<br><br>");
+
+            var payloadObject = {
+                "To": {
+                    "Address": "help@example.com",
+                    "SubscriberKey": "12356",
+                    "ContactAttributes": {
+                        "SubscriberAttributes": {
+                            "First_Name": "Aaron",
+                            "Cart_Total": "27.84",
+                            "Order_Number": 123456,
+                            "Purchase_Date": "2019-07-11T18:32:15Z",
+                            "Sub_Total": "30.01",
+                            "Tax": "2.17"
+                        }
+                    }
+                }
+            };
+            var payload = Platform.Function.Stringify(payloadObject);
+
+            var apiroute, bearertoken;
+
+            var apiroute = restURL + 'messaging/v1/messageDefinationSends/key:62883/send';
+            var bearertoken = 'Bearer ' + authToken;
+
+            var headerNames = ["Authorization"];
+            var headerValues = [bearertoken];
+
+            var restreq = new Script.Util.HttpRequest(apiroute);
+            restreq.emptyContentHandling = 0;
+            restreq.retries = 2;
+            restreq.continueOnError = true;
+            restreq.setHeader("Authorization", bearertoken);
+            restreq.method = "GET";
+
+            var resp = restreq.send();
+
+            Write("Welcome Journey by Id GET Request: " + "<br>");
+            Write("Response: " + String(restreq.content) + "<br><br>")
+
+
+        } catch(e) {
+            Write("Exception occured: " + e + "<br>");
+        }
+    }
+
+</script>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    Dropbox file new - API test rendering in Landing page
+</body>
+</html>
